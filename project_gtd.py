@@ -49,7 +49,6 @@ class project_gtd_timebox(osv.osv):
         'sequence': fields.integer(
             'Sequence',
             help="Gives the sequence order when displaying a list of timebox."),
-        'icon': fields.selection(tools.icons, 'Icon', size=64),
         'fold': fields.boolean(
             u"Folded by default",
             help=("This timebox is not visible in kanban view, when there are "
@@ -72,8 +71,6 @@ class project_task(osv.osv):
      }
 
     def copy_data(self, cr, uid, id, default=None, context=None):
-        if context is None:
-            context = {}
         if not default:
             default = {}
         default['timebox_id'] = False
@@ -90,36 +87,6 @@ class project_task(osv.osv):
         'context_id': _get_context
     }
 
-    def next_timebox(self, cr, uid, ids, *args):
-        timebox_obj = self.pool.get('project.gtd.timebox')
-        timebox_ids = timebox_obj.search(cr, uid, [])
-        if not timebox_ids:
-            return True
-        for task in self.browse(cr, uid, ids):
-            timebox = task.timebox_id.id
-            if not timebox:
-                self.write(cr, uid, task.id, {'timebox_id': timebox_ids[0]})
-            elif timebox_ids.index(timebox) != len(timebox_ids)-1:
-                index = timebox_ids.index(timebox)
-                self.write(
-                    cr, uid, task.id, {'timebox_id': timebox_ids[index+1]})
-        return True
-
-    def prev_timebox(self, cr, uid, ids, *args):
-        timebox_obj = self.pool.get('project.gtd.timebox')
-        timebox_ids = timebox_obj.search(cr, uid, [])
-        for task in self.browse(cr, uid, ids):
-            timebox = task.timebox_id.id
-            if timebox:
-                if timebox_ids.index(timebox):
-                    index = timebox_ids.index(timebox)
-                    self.write(
-                        cr, uid, task.id,
-                        {'timebox_id': timebox_ids[index - 1]})
-                else:
-                    self.write(cr, uid, task.id, {'timebox_id': False})
-        return True
-
     def fields_view_get(
             self, cr, uid, view_id=None, view_type='form', context=None,
             toolbar=False, submenu=False):
@@ -130,30 +97,9 @@ class project_task(osv.osv):
             model_data_obj = self.pool.get('ir.model.data')
             _, view_id = model_data_obj.get_object_reference(
                 cr, uid, 'project_gtd', 'view_task_gtd_kanban')
-        res = super(project_task, self).fields_view_get(
+        return super(project_task, self).fields_view_get(
             cr, uid, view_id, view_type, context, toolbar=toolbar,
             submenu=submenu)
-        search_extended = False
-        timebox_obj = self.pool.get('project.gtd.timebox')
-        if (res['type'] == 'search') and context.get('gtd', False):
-            tt = timebox_obj.browse(
-                cr, uid, timebox_obj.search(cr, uid, []), context=context)
-            search_extended = ''
-            for time in tt:
-                if time.icon:
-                    icon = time.icon
-                else:
-                    icon = ""
-                search_extended += '''<filter domain="[('timebox_id','=', ''' \
-                    + str(time.id) + ''')]" icon="''' + icon \
-                    + '''" string="''' + time.name \
-                    + '''" context="{'user_invisible': True}"/>\n'''
-            search_extended += '''<separator orientation="vertical"/>'''
-
-            res['arch'] = tools.ustr(res['arch']).replace(
-                '<separator name="gtdsep"/>', search_extended)
-
-        return res
 
     def _read_group_timebox_ids(
             self, cr, uid, ids, domain, read_group_order=None,
@@ -188,7 +134,5 @@ class project_task(osv.osv):
     _group_by_full = {
         'timebox_id': _read_group_timebox_ids,
     }
-
-project_task()
 
 # vim:expandtab:smartindent:tabstop=4:softtabstop=4:shiftwidth=4:

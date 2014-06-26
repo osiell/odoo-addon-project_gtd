@@ -139,11 +139,6 @@ msgid "This Week"
 msgstr ""
 
 #. module: project_gtd
-#: field:project.gtd.timebox,icon:0
-msgid "Icon"
-msgstr ""
-
-#. module: project_gtd
 #: model:ir.model,name:project_gtd.model_project_timebox_fill_plan
 msgid "Project Timebox Fill"
 msgstr ""
