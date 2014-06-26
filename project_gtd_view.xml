@@ -95,29 +95,22 @@
         </field>
     </record>
 
-    <record id="view_task_gtd_search" model="ir.ui.view">
-        <field name="name">project.task.gtd.search</field>
+    <record id="view_project_task_search_inherit" model="ir.ui.view">
+        <field name="name">project.task.search.inherit</field>
         <field name="model">project.task</field>
-        <field name="priority">50</field>
+        <field name="type">search</field>
+        <field name="inherit_id" ref="project.view_task_search_form"/>
         <field name="arch" type="xml">
-           <search string="Tasks">
-                <field name="name" string="Tasks"/>
-                <filter string="New" name="draft" domain="[('stage_id.sequence', '&lt;=', 1)]"/>
-                <filter name="message_unread" string="Unread Messages" domain="[('message_unread','=',True)]"/>
-                <separator/>
-                <filter string="Inbox" domain="[('timebox_id','=', False)]" help="Tasks having no timebox assigned yet"/>
-                <group expand="0" string="Display">
-                    <filter string="Show Context" name="context_show" context="{'context_show': True}" domain="[]" icon="terp-camera_test" help="Show the context field"/>
-                    <filter string="Show Deadlines" context="{'deadline_visible': False}" domain="[]" help="Show only tasks having a deadline" icon="terp-gnome-cpu-frequency-applet+"/>
-                </group>
-            </search>
+            <filter string="End Month" position="after">
+                <filter string="Timebox" domain="[]" context="{'group_by':'timebox_id'}"/>
+                <filter string="Context" domain="[]" context="{'group_by':'context_id'}"/>
+            </filter>
         </field>
     </record>
 
     <record model="ir.actions.act_window" id="open_gtd_task">
         <field name="name">My Tasks</field>
         <field name="res_model">project.task</field>
-        <field name="search_view_id" ref="view_task_gtd_search"/>
         <field name="context">{'set_editable':True,'set_visible':True,'gtd':True,'user_invisible':True, "search_default_open": 1}</field>
         <field name="domain">[('user_id','=',uid)]</field>
         <field name="view_type">form</field>
