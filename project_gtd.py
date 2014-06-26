@@ -47,6 +47,13 @@ class project_gtd_timebox(osv.osv):
         'name': fields.char('Timebox', size=64, required=True, select=1, translate=1),
         'sequence': fields.integer('Sequence', help="Gives the sequence order when displaying a list of timebox."),
         'icon': fields.selection(tools.icons, 'Icon', size=64),
+        'fold': fields.boolean(
+            u"Folded by default",
+            help=("This timebox is not visible in kanban view, when there are "
+                  "no records in that timebox to display.")),
+    }
+    _defaults = {
+        'fold': False,
     }
 
 project_gtd_timebox()
@@ -74,6 +81,7 @@ class project_task(osv.osv):
     _defaults = {
         'context_id': _get_context
     }
+
     def next_timebox(self, cr, uid, ids, *args):
         timebox_obj = self.pool.get('project.gtd.timebox')
         timebox_ids = timebox_obj.search(cr,uid,[])
@@ -101,7 +109,13 @@ class project_task(osv.osv):
         return True
 
     def fields_view_get(self, cr, uid, view_id=None, view_type='form', context=None, toolbar=False, submenu=False):
-        if not context: context = {}
+        if context is None:
+            context = {}
+        # In a GTD context, force the GTD kanban view ID
+        if context.get('gtd') and view_type == 'kanban':
+            model_data_obj = self.pool.get('ir.model.data')
+            view_model, view_id = model_data_obj.get_object_reference(
+                cr, uid, 'project_gtd', 'view_task_gtd_kanban')
         res = super(project_task,self).fields_view_get(cr, uid, view_id, view_type, context, toolbar=toolbar, submenu=submenu)
         search_extended = False
         timebox_obj = self.pool.get('project.gtd.timebox')
@@ -119,6 +133,40 @@ class project_task(osv.osv):
             res['arch'] = tools.ustr(res['arch']).replace('<separator name="gtdsep"/>', search_extended)
 
         return res
+
+    def _read_group_timebox_ids(
+            self, cr, uid, ids, domain, read_group_order=None,
+            access_rights_uid=None, context=None):
+        if context is None:
+            context = {}
+        timebox_obj = self.pool.get('project.gtd.timebox')
+        order = timebox_obj._order
+        access_rights_uid = access_rights_uid or uid
+        if read_group_order == 'timebox_id desc':
+            order = '%s desc' % order
+        search_domain = []
+        project_id = self._resolve_project_id_from_context(
+            cr, uid, context=context)
+        if project_id:
+            search_domain += ['|', ('project_ids', '=', project_id)]
+        #search_domain += [('id', 'in', ids)]
+        timebox_ids = timebox_obj._search(
+            cr, uid, search_domain, order=order,
+            access_rights_uid=access_rights_uid, context=context)
+        result = timebox_obj.name_get(
+            cr, access_rights_uid, timebox_ids, context=context)
+        # restore order of the search
+        result.sort(
+            lambda x, y: cmp(timebox_ids.index(x[0]), timebox_ids.index(y[0])))
+        fold = {}
+        for timebox in timebox_obj.browse(
+                cr, access_rights_uid, timebox_ids, context=context):
+            fold[timebox.id] = timebox.fold or False
+        return result, fold
+
+    _group_by_full = {
+        'timebox_id': _read_group_timebox_ids,
+    }
 
 project_task()
 
