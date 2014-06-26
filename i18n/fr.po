@@ -120,6 +120,13 @@ msgid "My Tasks"
 msgstr "Mes tâches par zone de temps"
 
 #. module: project_gtd
+#: model:ir.actions.act_window,name:project_gtd.action_view_project_task_gtd_all
+#: model:ir.ui.menu,name:project_gtd.menu_action_view_project_task_gtd_all
+#: view:project.task:0
+msgid "Tasks by timebox"
+msgstr "Tâches par zone de temps"
+
+#. module: project_gtd
 #: help:project.task,context_id:0
 msgid "The context place where user has to treat task"
 msgstr "Le contexte dans lequel l'utilisateur doit traiter la tâche"
